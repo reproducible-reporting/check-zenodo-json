@@ -3,6 +3,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSES/CC0-1.0.txt)
+[![DOI](https://zenodo.org/badge/1345847600.svg)](https://doi.org/10.5281/zenodo.22096144)
 
 When Zenodo archives a GitHub release,
 it reads the deposit metadata from a `.zenodo.json` file in the repository.
