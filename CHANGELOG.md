@@ -9,6 +9,12 @@ and this project adheres to [Effort-based Versioning](https://jacobtomlinson.dev
 
 (no changes yet)
 
+## [1.1.1][] - 2026-08-25
+
+### Fixed
+
+- Corrected the note describing the license of the deposit.
+
 ## [1.1.0][] - 2026-08-25
 
 ### Added
@@ -26,3 +32,4 @@ Initial release of `check-zenodo-json`.
 
 [1.0.0]: https://github.com/reproducible-reporting/check-zenodo-json/releases/tag/v1.0.0
 [1.1.0]: https://github.com/reproducible-reporting/check-zenodo-json/releases/tag/v1.1.0
+[1.1.1]: https://github.com/reproducible-reporting/check-zenodo-json/releases/tag/v1.1.1
