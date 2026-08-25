@@ -28,5 +28,5 @@ if [[ ! -s notes.md ]]; then
 fi
 
 # Point at the changelog as it stood at this tag, which also holds the older entries.
-CHANGELOG_URL="https://github.com/${REPOSITORY}/blob/${TAG}/CHANGELOG.md"
+CHANGELOG_URL="https://github.com/${REPOSITORY}/blob/main/CHANGELOG.md"
 printf '\nSee [CHANGELOG.md](%s) for the full history.\n' "${CHANGELOG_URL}" >> notes.md
