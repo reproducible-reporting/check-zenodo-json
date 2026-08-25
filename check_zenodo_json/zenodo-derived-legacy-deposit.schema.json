@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/reproducible-reporting/check-zenodo-json/main/check_zenodo_json/zenodo-derived-legacy-deposit.schema.json",
   "title": "Zenodo deposit metadata (.zenodo.json)",
   "description": "Metadata that Zenodo reads from a `.zenodo.json` file in a GitHub repository when it archives a release. Zenodo translates the file with the legacy deserializer in zenodo-rdm (`zenodo_rdm.legacy.deserializers`), which silently drops keys it does not know, so an unrecognised key here is a key Zenodo would ignore.",
-  "$comment": "Derived on 2026-08-25 from the loader Zenodo actually runs, zenodo_rdm.legacy.deserializers at zenodo/zenodo-rdm@6386403, with the license vocabulary taken from zenodo/zenodo-rdm legacy/zenodo_legacy/data and the custom field names from zenodo_rdm.custom_fields and invenio_rdm_records.contrib. The resource type, contributor role, relation type and date type vocabularies are taken from what Zenodo has deployed, read on 2026-08-25 from https://zenodo.org/api/vocabularies/{resourcetypes,contributorsroles,relationtypes,datetypes}, because zenodo-rdm overrides only some vocabularies and inherits the rest from whichever invenio-rdm-records fixture its instance was built with, which lags that project's main branch. What becomes of the loaded metadata was read from zenodo_rdm.github.release and invenio_rdm_records.services.github, which build the record when Zenodo archives a GitHub release. That commit was chosen because Zenodo publishes no version endpoint: the InvenioRDM version in the generator meta tag of every page is too coarse to identify a deployment, so the running code can only be bracketed. On 2026-08-25 zenodo.org served a build between v25.2.2 and v25.2.5, read from its frontend bundler and from two behaviours that changed in known releases, and 6386403 is v25.2.5 plus one commit that touches only a deployment script. Nothing this schema derives from moves inside that bracket. sandbox.zenodo.org ran v26.1.0 or later on the same day. Zenodo extends those vocabularies over time, so a value rejected here may have become valid since.",
+  "$comment": "Derived on 2026-08-25 from the loader Zenodo actually runs, zenodo_rdm.legacy.deserializers at zenodo/zenodo-rdm@6386403, with the license vocabulary taken from zenodo/zenodo-rdm legacy/zenodo_legacy/data and the custom field names and value schemas from zenodo_rdm.custom_fields and invenio_rdm_records.contrib. The resource type, contributor role, relation type, date type, programming language and development status vocabularies are taken from what Zenodo has deployed, read on 2026-08-25 from https://zenodo.org/api/vocabularies/{resourcetypes,contributorsroles,relationtypes,datetypes,code:programmingLanguages,code:developmentStatus}, because zenodo-rdm overrides only some vocabularies and inherits the rest from whichever invenio-rdm-records fixture its instance was built with, which lags that project's main branch. What becomes of the loaded metadata was read from zenodo_rdm.github.release and invenio_rdm_records.services.github, which build the record when Zenodo archives a GitHub release. That commit was chosen because Zenodo publishes no version endpoint: the InvenioRDM version in the generator meta tag of every page is too coarse to identify a deployment, so the running code can only be bracketed. On 2026-08-25 zenodo.org served a build between v25.2.2 and v25.2.5, read from its frontend bundler and from two behaviours that changed in known releases, and 6386403 is v25.2.5 plus one commit that touches only a deployment script. Nothing this schema derives from moves inside that bracket. sandbox.zenodo.org ran v26.1.0 or later on the same day. Zenodo extends those vocabularies over time, so a value rejected here may have become valid since.",
   "type": "object",
   "additionalProperties": false,
   "allOf": [
@@ -552,7 +552,7 @@
     },
     "custom": {
       "description": "Custom fields, keyed by their namespaced name, such as `dwc:family`.",
-      "$comment": "Only the field names and the container type of their values are enumerated. What goes inside is left unconstrained, because the 91 fields carry as many different value schemas. A value of the wrong shape is dropped without a word, so `custom` is the one place where this schema cannot promise that everything it accepts survives. The container type of `obo:RO_0002453` is unknown: no value reached the record in testing.",
+      "$comment": "The value schema of every field comes from the custom field definitions in zenodo_rdm.custom_fields and invenio_rdm_records.contrib, where each field names a marshmallow field class that fixes the shape of its value. The code:programmingLanguages and code:developmentStatus vocabularies were read on 2026-08-25 from https://zenodo.org/api/vocabularies. A value of the wrong shape is dropped without a word, except for a vocabulary identifier Zenodo does not know, which makes the deposit fail.",
       "type": "object",
       "propertyNames": {
         "enum": [
@@ -651,274 +651,481 @@
       },
       "properties": {
         "ac:associatedSpecimenReference": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "ac:captureDevice": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "ac:digitizationDate": {
-          "type": "array"
+          "$ref": "#/definitions/custom_edtf_dates"
         },
         "ac:physicalSetting": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "ac:resourceCreationTechnique": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "ac:subjectOrientation": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "ac:subjectPart": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "code:codeRepository": {
-          "type": "string"
+          "description": "URL of the repository the code is hosted in. Zenodo reads an `http`, `https`, `ftp` or `ftps` URL whose host name carries a top level domain of at least two characters.",
+          "type": "string",
+          "pattern": "^(?:https?|ftps?)://(?:(?:[A-Za-z0-9\\-._~!$&'()*+,;=:]|%[0-9A-Fa-f]{2})*@)?(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+(?:[A-Za-z]{2,6}\\.?|[A-Za-z0-9-]{2,}\\.?)|localhost|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|\\[[A-Fa-f0-9]*:[A-Fa-f0-9:]+\\])(?::\\d+)?(?:/?|[/?]\\S+)$"
         },
         "code:developmentStatus": {
-          "type": "object"
+          "description": "Development status of the software, from Zenodo's `code:developmentStatus` vocabulary. An unknown or differently capitalised identifier makes the deposit fail instead of being dropped.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/development_status_id"
+            }
+          }
         },
         "code:programmingLanguage": {
-          "type": "array"
+          "description": "Programming languages the software is written in, from Zenodo's `code:programmingLanguages` vocabulary. An unknown or differently capitalised identifier makes the deposit fail instead of being dropped.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/programming_language_id"
+              }
+            }
+          }
         },
         "dc:creator": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dc:rightsHolder": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:associatedSequences": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:basisOfRecord": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:catalogNumber": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:class": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:collectionCode": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:country": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:countryCode": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:county": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:datasetID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:dateIdentified": {
-          "type": "array"
+          "$ref": "#/definitions/custom_iso_dates"
         },
         "dwc:decimalLatitude": {
-          "type": "array"
+          "$ref": "#/definitions/custom_numbers"
         },
         "dwc:decimalLongitude": {
-          "type": "array"
+          "$ref": "#/definitions/custom_numbers"
         },
         "dwc:eventDate": {
-          "type": "array"
+          "$ref": "#/definitions/custom_iso_dates"
         },
         "dwc:eventID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:family": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:genus": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:geodeticDatum": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:habitat": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:identifiedBy": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:individualCount": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:institutionCode": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:kingdom": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:lifeStage": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:locality": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:locationID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:materialSampleID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:namePublishedInID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:namePublishedInYear": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:occurrenceID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:occurrenceStatus": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:order": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:organismQuantity": {
-          "type": "array"
+          "$ref": "#/definitions/custom_numbers"
         },
         "dwc:organismQuantityType": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:otherCatalogNumbers": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:parentEventID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:phylum": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:preparations": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:recordedBy": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:sampleSizeUnit": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:sampleSizeValue": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:samplingEffort": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:samplingProtocol": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:scientificName": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:scientificNameAuthorship": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:scientificNameID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:sex": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:specificEpithet": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:stateProvince": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:taxonID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:taxonRank": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:taxonomicStatus": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:typeStatus": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:verbatimElevation": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "dwc:verbatimEventDate": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif-dwc:identifiedByID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif-dwc:recordedByID": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif:DNA_sequence": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif:ampliconSize": {
-          "type": "array"
+          "$ref": "#/definitions/custom_integers"
         },
         "gbif:pcr_primer_forward": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif:pcr_primer_name_forward": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif:pcr_primer_name_reverse": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "gbif:pcr_primer_reverse": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "imprint:imprint": {
-          "type": "object"
+          "description": "Book, report or conference proceedings the deposit is part of. It replaces what `partof_title`, `partof_pages`, `imprint_isbn` and `imprint_place` would have built.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "title": {
+              "description": "Title of the book the deposit is a section of.",
+              "type": "string"
+            },
+            "isbn": {
+              "description": "ISBN of the book, as ten or thirteen digits, optionally grouped with hyphens or spaces. The check digit is not verified here, and Zenodo drops an ISBN that fails it.",
+              "type": "string",
+              "pattern": "^(?:ISBN[- ]?(?:10|13)?:?[- ]?)?[0-9][0-9 -]{8,16}[0-9Xx]$"
+            },
+            "pages": {
+              "description": "Pages of the book the deposit covers.",
+              "type": "string"
+            },
+            "place": {
+              "description": "Place the book was published.",
+              "type": "string"
+            },
+            "edition": {
+              "description": "Edition of the book.",
+              "type": "string"
+            }
+          }
         },
         "journal:journal": {
-          "type": "object"
+          "description": "Journal the deposit appeared in. It replaces what `journal_title`, `journal_volume`, `journal_issue` and `journal_pages` would have built.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "title": {
+              "description": "Title of the journal.",
+              "type": "string"
+            },
+            "issue": {
+              "description": "Issue of the journal.",
+              "type": "string"
+            },
+            "volume": {
+              "description": "Volume of the journal.",
+              "type": "string"
+            },
+            "pages": {
+              "description": "Pages of the journal the deposit covers.",
+              "type": "string"
+            },
+            "issn": {
+              "description": "ISSN of the journal, as eight digits, optionally split by a hyphen or a space. The check digit is not verified here, and Zenodo drops an ISSN that fails it.",
+              "type": "string",
+              "pattern": "^\\d{4}[- ]?\\d{3}[\\dXx]$"
+            }
+          }
         },
         "legacy:communities": {
-          "type": "array"
+          "description": "Identifiers of the communities the deposit was submitted to. Zenodo writes this field itself from `communities`.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
         },
         "legacy:subjects": {
-          "type": "array"
+          "description": "Subjects of the deposit. Zenodo writes this field itself from `subjects`.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "term": {
+                "description": "Name of the subject.",
+                "type": "string"
+              },
+              "identifier": {
+                "description": "Identifier of the subject in its scheme.",
+                "type": "string"
+              },
+              "scheme": {
+                "description": "Scheme the identifier belongs to.",
+                "type": "string"
+              }
+            }
+          }
         },
         "meeting:meeting": {
-          "type": "object"
+          "description": "Conference the deposit was presented at. It replaces what the `conference_*` keys would have built.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "title": {
+              "description": "Title of the conference.",
+              "type": "string"
+            },
+            "acronym": {
+              "description": "Acronym of the conference.",
+              "type": "string"
+            },
+            "dates": {
+              "description": "Dates of the conference, as free text.",
+              "type": "string"
+            },
+            "place": {
+              "description": "Place of the conference.",
+              "type": "string"
+            },
+            "session": {
+              "description": "Session within the conference.",
+              "type": "string"
+            },
+            "session_part": {
+              "description": "Part within the session.",
+              "type": "string"
+            },
+            "url": {
+              "description": "URL of the conference. Zenodo reads an `http`, `https`, `ftp` or `ftps` URL whose host name carries a top level domain of at least two characters.",
+              "type": "string",
+              "pattern": "^(?:https?|ftps?)://(?:(?:[A-Za-z0-9\\-._~!$&'()*+,;=:]|%[0-9A-Fa-f]{2})*@)?(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+(?:[A-Za-z]{2,6}\\.?|[A-Za-z0-9-]{2,}\\.?)|localhost|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|\\[[A-Fa-f0-9]*:[A-Fa-f0-9:]+\\])(?::\\d+)?(?:/?|[/?]\\S+)$"
+            },
+            "identifiers": {
+              "description": "Identifiers of the conference. Zenodo detects the scheme from the identifier when it is left out.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "identifier": {
+                    "description": "Value of the identifier.",
+                    "type": "string"
+                  },
+                  "scheme": {
+                    "description": "Scheme the identifier belongs to.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         },
         "mixs:0000012": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000013": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000014": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000044": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000045": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000049": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000050": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000058": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "mixs:0000090": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
+        },
+        "obo:RO_0002453": {
+          "description": "Host of relationships between organisms.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "subject": {
+                "description": "Organisms that are hosted.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "object": {
+                "description": "Organisms that host them.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         },
         "openbiodiv:TaxonomicConceptLabel": {
-          "type": "array"
+          "$ref": "#/definitions/custom_strings"
         },
         "thesis:thesis": {
-          "type": "object"
+          "$comment": "`date_submitted` and `date_defended` are EDTF level 2 dates, which a pattern cannot describe, so they are only checked for being strings.",
+          "description": "Thesis the deposit reports on. It replaces what `thesis_university` would have built.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "university": {
+              "description": "University that awarded the degree.",
+              "type": "string"
+            },
+            "department": {
+              "description": "Department that awarded the degree.",
+              "type": "string"
+            },
+            "type": {
+              "description": "Type of the thesis.",
+              "type": "string"
+            },
+            "date_submitted": {
+              "description": "Date the thesis was submitted, as an EDTF date.",
+              "type": "string"
+            },
+            "date_defended": {
+              "description": "Date the thesis was defended, as an EDTF date.",
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -976,8 +1183,9 @@
       "type": "string"
     },
     "conference_url": {
-      "description": "URL of the conference.",
-      "type": "string"
+      "description": "URL of the conference. Zenodo reads an `http`, `https`, `ftp` or `ftps` URL whose host name carries a top level domain of at least two characters.",
+      "type": "string",
+      "pattern": "^(?:https?|ftps?)://(?:(?:[A-Za-z0-9\\-._~!$&'()*+,;=:]|%[0-9A-Fa-f]{2})*@)?(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+(?:[A-Za-z]{2,6}\\.?|[A-Za-z0-9-]{2,}\\.?)|localhost|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|\\[[A-Fa-f0-9]*:[A-Fa-f0-9:]+\\])(?::\\d+)?(?:/?|[/?]\\S+)$"
     },
     "conference_session": {
       "description": "Session within the conference.",
@@ -1623,6 +1831,780 @@
       "else": {
         "$ref": "#/definitions/license_id"
       }
+    },
+    "custom_strings": {
+      "description": "Value of a custom field that Zenodo defines as a list of keywords or of free text. Zenodo reads neither a bare string nor an empty list.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "custom_numbers": {
+      "description": "Value of a custom field that Zenodo defines as a list of double precision numbers. A number written as a string is read as well.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "pattern": "^[+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+          }
+        ]
+      }
+    },
+    "custom_integers": {
+      "description": "Value of a custom field that Zenodo defines as a list of integers. Zenodo reads neither a fractional number nor a number written as a string.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "custom_iso_dates": {
+      "description": "Value of a custom field that Zenodo defines as a list of ISO 8601 dates. Only a complete date is read, so a year or a year and a month is not enough.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2\\d))$"
+      }
+    },
+    "custom_edtf_dates": {
+      "description": "Value of a custom field that Zenodo defines as a list of EDTF level 0 dates. Each entry is a date (`YYYY`, `YYYY-MM` or `YYYY-MM-DD`), an interval of two such dates, or a complete date followed by a time.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^(?:\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?(?:/\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?)?|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2\\d))T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})?)$"
+      }
+    },
+    "programming_language_id": {
+      "type": "string",
+      "enum": [
+        "1c_enterprise",
+        "2_dimensional_array",
+        "4d",
+        "abap",
+        "abap_cds",
+        "abnf",
+        "actionscript",
+        "ada",
+        "adblock_filter_list",
+        "adobe_font_metrics",
+        "agda",
+        "ags_script",
+        "aidl",
+        "al",
+        "alloy",
+        "alpine_abuild",
+        "altium_designer",
+        "ampl",
+        "angelscript",
+        "ant_build_system",
+        "antlers",
+        "antlr",
+        "apacheconf",
+        "apex",
+        "api_blueprint",
+        "apl",
+        "apollo_guidance_computer",
+        "applescript",
+        "arc",
+        "asciidoc",
+        "asl",
+        "asn.1",
+        "asp.net",
+        "aspectj",
+        "assembly",
+        "astro",
+        "asymptote",
+        "ats",
+        "augeas",
+        "autohotkey",
+        "autoit",
+        "avro_idl",
+        "awk",
+        "ballerina",
+        "basic",
+        "batchfile",
+        "beef",
+        "befunge",
+        "berry",
+        "bibtex",
+        "bicep",
+        "bikeshed",
+        "bison",
+        "bitbake",
+        "blade",
+        "blitzbasic",
+        "blitzmax",
+        "bluespec",
+        "bluespec_bh",
+        "boo",
+        "boogie",
+        "brainfuck",
+        "brighterscript",
+        "brightscript",
+        "browserslist",
+        "c",
+        "c#",
+        "c++",
+        "c2hs_haskell",
+        "c_objdump",
+        "cabal_config",
+        "cadence",
+        "cairo",
+        "cameligo",
+        "cap'n_proto",
+        "cap_cds",
+        "cartocss",
+        "ceylon",
+        "chapel",
+        "charity",
+        "checksums",
+        "chuck",
+        "cil",
+        "circom",
+        "cirru",
+        "clarion",
+        "clarity",
+        "classic_asp",
+        "clean",
+        "click",
+        "clips",
+        "clojure",
+        "closure_templates",
+        "cloud_firestore_security_rules",
+        "cmake",
+        "cobol",
+        "codeowners",
+        "codeql",
+        "coffeescript",
+        "coldfusion",
+        "coldfusion_cfc",
+        "collada",
+        "common_lisp",
+        "common_workflow_language",
+        "component_pascal",
+        "conll_u",
+        "cool",
+        "coq",
+        "cpp_objdump",
+        "creole",
+        "crystal",
+        "cson",
+        "csound",
+        "csound_document",
+        "csound_score",
+        "css",
+        "csv",
+        "cuda",
+        "cue",
+        "cue_sheet",
+        "curl_config",
+        "curry",
+        "cweb",
+        "cycript",
+        "cypher",
+        "cython",
+        "d",
+        "d2",
+        "d_objdump",
+        "dafny",
+        "darcs_patch",
+        "dart",
+        "dataweave",
+        "debian_package_control_file",
+        "denizenscript",
+        "desktop",
+        "dhall",
+        "diff",
+        "digital_command_language",
+        "dircolors",
+        "directx_3d_file",
+        "dm",
+        "dns_zone",
+        "dockerfile",
+        "dogescript",
+        "dotenv",
+        "dtrace",
+        "dylan",
+        "e",
+        "e_mail",
+        "eagle",
+        "earthly",
+        "easybuild",
+        "ebnf",
+        "ec",
+        "ecere_projects",
+        "ecl",
+        "eclipse",
+        "ecmarkup",
+        "editorconfig",
+        "edje_data_collection",
+        "edn",
+        "eiffel",
+        "ejs",
+        "elixir",
+        "elm",
+        "elvish",
+        "elvish_transcript",
+        "emacs_lisp",
+        "emberscript",
+        "eq",
+        "erlang",
+        "euphoria",
+        "f#",
+        "f*",
+        "factor",
+        "fancy",
+        "fantom",
+        "faust",
+        "fennel",
+        "figlet_font",
+        "filebench_wml",
+        "filterscript",
+        "fish",
+        "fluent",
+        "flux",
+        "formatted",
+        "forth",
+        "fortran",
+        "fortran_free_form",
+        "freebasic",
+        "freemarker",
+        "frege",
+        "futhark",
+        "g_code",
+        "game_maker_language",
+        "gaml",
+        "gams",
+        "gap",
+        "gcc_machine_description",
+        "gdb",
+        "gdscript",
+        "gedcom",
+        "gemfile.lock",
+        "gemini",
+        "genero",
+        "genero_forms",
+        "genie",
+        "genshi",
+        "gentoo_ebuild",
+        "gentoo_eclass",
+        "gerber_image",
+        "gettext_catalog",
+        "gherkin",
+        "git_attributes",
+        "git_config",
+        "git_revision_list",
+        "gleam",
+        "glsl",
+        "glyph",
+        "glyph_bitmap_distribution_format",
+        "gn",
+        "gnuplot",
+        "go",
+        "go_checksums",
+        "go_module",
+        "go_workspace",
+        "godot_resource",
+        "golo",
+        "gosu",
+        "grace",
+        "gradle",
+        "gradle_kotlin_dsl",
+        "grammatical_framework",
+        "graph_modeling_language",
+        "graphql",
+        "graphviz_(dot)",
+        "groovy",
+        "groovy_server_pages",
+        "gsc",
+        "hack",
+        "haml",
+        "handlebars",
+        "haproxy",
+        "harbour",
+        "haskell",
+        "haxe",
+        "hcl",
+        "hiveql",
+        "hlsl",
+        "hocon",
+        "holyc",
+        "hoon",
+        "hosts_file",
+        "html",
+        "html+ecr",
+        "html+eex",
+        "html+erb",
+        "html+php",
+        "html+razor",
+        "http",
+        "hxml",
+        "hy",
+        "hyphy",
+        "idl",
+        "idris",
+        "ignore_list",
+        "igor_pro",
+        "imagej_macro",
+        "imba",
+        "inform_7",
+        "ini",
+        "ink",
+        "inno_setup",
+        "io",
+        "ioke",
+        "irc_log",
+        "isabelle",
+        "isabelle_root",
+        "j",
+        "janet",
+        "jar_manifest",
+        "jasmin",
+        "java",
+        "java_properties",
+        "java_server_pages",
+        "javascript",
+        "javascript+erb",
+        "jcl",
+        "jest_snapshot",
+        "jetbrains_mps",
+        "jflex",
+        "jinja",
+        "jison",
+        "jison_lex",
+        "jolie",
+        "jq",
+        "json",
+        "json5",
+        "json_with_comments",
+        "jsoniq",
+        "jsonld",
+        "jsonnet",
+        "julia",
+        "jupyter_notebook",
+        "just",
+        "kaitai_struct",
+        "kakounescript",
+        "kerboscript",
+        "kicad_layout",
+        "kicad_legacy_layout",
+        "kicad_schematic",
+        "kickstart",
+        "kit",
+        "kotlin",
+        "krl",
+        "kusto",
+        "kvlang",
+        "labview",
+        "lark",
+        "lasso",
+        "latte",
+        "lean",
+        "less",
+        "lex",
+        "lfe",
+        "ligolang",
+        "lilypond",
+        "limbo",
+        "linker_script",
+        "linux_kernel_module",
+        "liquid",
+        "literate_agda",
+        "literate_coffeescript",
+        "literate_haskell",
+        "livescript",
+        "llvm",
+        "logos",
+        "logtalk",
+        "lolcode",
+        "lookml",
+        "loomscript",
+        "lsl",
+        "ltspice_symbol",
+        "lua",
+        "m",
+        "m4",
+        "m4sugar",
+        "macaulay2",
+        "makefile",
+        "mako",
+        "markdown",
+        "marko",
+        "mask",
+        "mathematica",
+        "matlab",
+        "maven_pom",
+        "max",
+        "maxscript",
+        "mcfunction",
+        "mdx",
+        "mercury",
+        "mermaid",
+        "meson",
+        "metal",
+        "microsoft_developer_studio_project",
+        "microsoft_visual_studio_solution",
+        "minid",
+        "miniyaml",
+        "mint",
+        "mirah",
+        "mirc_script",
+        "mlir",
+        "modelica",
+        "modula_2",
+        "modula_3",
+        "module_management_system",
+        "monkey",
+        "monkey_c",
+        "moocode",
+        "moonscript",
+        "motoko",
+        "motorola_68k_assembly",
+        "move",
+        "mql4",
+        "mql5",
+        "mtml",
+        "muf",
+        "mupad",
+        "muse",
+        "mustache",
+        "myghty",
+        "nanorc",
+        "nasal",
+        "nasl",
+        "ncl",
+        "nearley",
+        "nemerle",
+        "neon",
+        "nesc",
+        "netlinx",
+        "netlinx+erb",
+        "netlogo",
+        "newlisp",
+        "nextflow",
+        "nginx",
+        "nim",
+        "ninja",
+        "nit",
+        "nix",
+        "nl",
+        "npm_config",
+        "nsis",
+        "nu",
+        "numpy",
+        "nunjucks",
+        "nushell",
+        "nwscript",
+        "oasv2_json",
+        "oasv2_yaml",
+        "oasv3_json",
+        "oasv3_yaml",
+        "objdump",
+        "object_data_instance_notation",
+        "objective_c",
+        "objective_c++",
+        "objective_j",
+        "objectscript",
+        "ocaml",
+        "odin",
+        "omgrofl",
+        "ooc",
+        "opa",
+        "opal",
+        "open_policy_agent",
+        "openapi_specification_v2",
+        "openapi_specification_v3",
+        "opencl",
+        "openedge_abl",
+        "openqasm",
+        "openrc_runscript",
+        "openscad",
+        "openstep_property_list",
+        "opentype_feature_file",
+        "option_list",
+        "org",
+        "ox",
+        "oxygene",
+        "oz",
+        "p4",
+        "pact",
+        "pan",
+        "papyrus",
+        "parrot",
+        "parrot_assembly",
+        "parrot_internal_representation",
+        "pascal",
+        "pawn",
+        "pddl",
+        "peg.js",
+        "pep8",
+        "perl",
+        "php",
+        "pic",
+        "pickle",
+        "picolisp",
+        "piglatin",
+        "pike",
+        "plantuml",
+        "plpgsql",
+        "plsql",
+        "pod",
+        "pod_6",
+        "pogoscript",
+        "polar",
+        "pony",
+        "portugol",
+        "postcss",
+        "postscript",
+        "pov_ray_sdl",
+        "powerbuilder",
+        "powershell",
+        "prisma",
+        "processing",
+        "procfile",
+        "proguard",
+        "prolog",
+        "promela",
+        "propeller_spin",
+        "protocol_buffer",
+        "protocol_buffer_text_format",
+        "public_key",
+        "pug",
+        "puppet",
+        "pure_data",
+        "purebasic",
+        "purescript",
+        "pyret",
+        "python",
+        "python_console",
+        "python_traceback",
+        "q",
+        "q#",
+        "qmake",
+        "qml",
+        "qt_script",
+        "quake",
+        "r",
+        "racket",
+        "ragel",
+        "raku",
+        "raml",
+        "rascal",
+        "raw_token_data",
+        "rbs",
+        "rdoc",
+        "readline_config",
+        "realbasic",
+        "reason",
+        "reasonligo",
+        "rebol",
+        "record_jar",
+        "red",
+        "redcode",
+        "redirect_rules",
+        "regular_expression",
+        "ren'py",
+        "renderscript",
+        "rescript",
+        "restructuredtext",
+        "rexx",
+        "rez",
+        "rich_text_format",
+        "ring",
+        "riot",
+        "rmarkdown",
+        "robotframework",
+        "robots.txt",
+        "roff",
+        "roff_manpage",
+        "rouge",
+        "routeros_script",
+        "rpc",
+        "rpgle",
+        "rpm_spec",
+        "ruby",
+        "runoff",
+        "rust",
+        "sage",
+        "saltstack",
+        "sas",
+        "sass",
+        "scala",
+        "scaml",
+        "scenic",
+        "scheme",
+        "scilab",
+        "scss",
+        "sed",
+        "self",
+        "selinux_policy",
+        "shaderlab",
+        "shell",
+        "shellcheck_config",
+        "shellsession",
+        "shen",
+        "sieve",
+        "simple_file_verification",
+        "singularity",
+        "slash",
+        "slice",
+        "slim",
+        "smali",
+        "smalltalk",
+        "smarty",
+        "smithy",
+        "smpl",
+        "smt",
+        "snakemake",
+        "solidity",
+        "soong",
+        "sourcepawn",
+        "sparql",
+        "spline_font_database",
+        "sqf",
+        "sql",
+        "sqlpl",
+        "squirrel",
+        "srecode_template",
+        "ssh_config",
+        "stan",
+        "standard_ml",
+        "star",
+        "starlark",
+        "stata",
+        "stl",
+        "ston",
+        "stringtemplate",
+        "stylus",
+        "subrip_text",
+        "sugarss",
+        "supercollider",
+        "svelte",
+        "svg",
+        "sway",
+        "sweave",
+        "swift",
+        "swig",
+        "systemverilog",
+        "talon",
+        "tcl",
+        "tcsh",
+        "tea",
+        "terra",
+        "tex",
+        "texinfo",
+        "text",
+        "textile",
+        "textmate_properties",
+        "thrift",
+        "ti_program",
+        "tl_verilog",
+        "tla",
+        "toml",
+        "tsql",
+        "tsv",
+        "tsx",
+        "turing",
+        "turtle",
+        "twig",
+        "txl",
+        "type_language",
+        "typescript",
+        "typst",
+        "unified_parallel_c",
+        "unity3d_asset",
+        "unix_assembly",
+        "uno",
+        "unrealscript",
+        "urweb",
+        "v",
+        "vala",
+        "valve_data_format",
+        "vba",
+        "vbscript",
+        "vcl",
+        "velocity_template_language",
+        "verilog",
+        "vhdl",
+        "vim_help_file",
+        "vim_script",
+        "vim_snippet",
+        "visual_basic_.net",
+        "visual_basic_6.0",
+        "volt",
+        "vue",
+        "vyper",
+        "wavefront_material",
+        "wavefront_object",
+        "wdl",
+        "web_ontology_language",
+        "webassembly",
+        "webassembly_interface_type",
+        "webidl",
+        "webvtt",
+        "wget_config",
+        "wgsl",
+        "whiley",
+        "wikitext",
+        "win32_message_file",
+        "windows_registry_entries",
+        "wisp",
+        "witcher_script",
+        "wollok",
+        "world_of_warcraft_addon_data",
+        "wren",
+        "x10",
+        "x_bitmap",
+        "x_font_directory_index",
+        "x_pixmap",
+        "xbase",
+        "xc",
+        "xcompose",
+        "xml",
+        "xml_property_list",
+        "xojo",
+        "xonsh",
+        "xpages",
+        "xproc",
+        "xquery",
+        "xs",
+        "xslt",
+        "xtend",
+        "yacc",
+        "yaml",
+        "yang",
+        "yara",
+        "yasnippet",
+        "yul",
+        "zap",
+        "zeek",
+        "zenscript",
+        "zephir",
+        "zig",
+        "zil",
+        "zimpl"
+      ]
+    },
+    "development_status_id": {
+      "type": "string",
+      "enum": [
+        "abandoned",
+        "active",
+        "concept",
+        "inactive",
+        "moved",
+        "suspended",
+        "unsupported",
+        "wip"
+      ]
     }
   }
 }

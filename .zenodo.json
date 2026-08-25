@@ -33,5 +33,16 @@
   "references": [
     "Zenodo legacy deserializer: https://github.com/zenodo/zenodo-rdm",
     "InvenioRDM vocabularies: https://github.com/inveniosoftware/invenio-rdm-records"
-  ]
+  ],
+  "custom": {
+    "code:codeRepository": "https://github.com/reproducible-reporting/check-zenodo-json/",
+    "code:programmingLanguage": [
+      {
+        "id": "python"
+      }
+    ],
+    "code:developmentStatus": {
+      "id": "active"
+    }
+  }
 }

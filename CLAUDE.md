@@ -49,7 +49,8 @@ The schema describes what Zenodo does, not what Zenodo documents or what would b
   It inherits the rest from whichever `invenio-rdm-records` fixture its instance was built with,
   and that fixture is not re-synchronised when entries are added upstream,
   so `invenio-rdm-records` on its main branch lists values Zenodo will reject.
-  The resource type, contributor role, relation type and date type vocabularies
+  The resource type, contributor role, relation type, date type,
+  programming language and development status vocabularies
   therefore come from `https://zenodo.org/api/vocabularies/<name>`,
   which `zenodo.org` and `sandbox.zenodo.org` answer identically.
   The `datacite` property of an entry gives the spelling the Zenodo documentation uses,
@@ -71,9 +72,7 @@ The schema describes what Zenodo does, not what Zenodo documents or what would b
   The keys of `custom` are no exception:
   they are enumerated from the custom field definitions
   in `zenodo_rdm.custom_fields` and `invenio_rdm_records.contrib`,
-  and each one carries the container type its value must have.
-  What goes inside that container is the one thing this schema does not promise,
-  because the 91 fields carry as many different value schemas.
+  and each one carries the value schema of the marshmallow field it is defined with.
 - **A deliberate narrowing is written down where it is made.**
   Zenodo lower cases a license, a relation, a contributor role and a date type
   before it looks the value up,

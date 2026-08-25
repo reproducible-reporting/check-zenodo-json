@@ -219,6 +219,13 @@ This has a few important implications:
   Note that a license found only in the legacy vocabulary, such as `gfdl`,
   is looked up without that normalization,
   so there Zenodo requires the lower case form as well.
+- **A vocabulary identifier in a custom field is matched exactly.**
+  The `code:programmingLanguage` and `code:developmentStatus` custom fields
+  take an identifier from a vocabulary that Zenodo runs,
+  and it looks the value up without lower casing it,
+  so `{"id": "Python"}` is as wrong as `{"id": "pyhton"}`.
+  Zenodo refuses both with an error instead of dropping them,
+  which makes these the only values in `custom` whose rejection is not silent.
 - **Leaving `license` out is a choice Zenodo makes for you.**
   When `access_right` is `open` or `embargoed` and there is no `license`,
   the loader assigns CC-BY-4.0, or CC0-1.0 for a dataset, without a word.
@@ -233,10 +240,10 @@ and the shape of the identifiers and dates that Zenodo would otherwise discard i
 Some things stay out of reach:
 
 - **A check digit is never verified.**
-  An ORCID and an ISBN both carry one, and Zenodo does check it.
+  An ORCID, an ISBN and an ISSN all carry one, and Zenodo does check it.
   A pattern cannot, so the schema only pins down the shape.
   An identifier of the right shape with the wrong check digit still passes the hook.
-  Zenodo then drops the ISBN,
+  Zenodo then drops the ISBN or the ISSN,
   and mangles the ORCID in a way that costs the creator their name in the deposit.
   A GND is the other way round:
   Zenodo checks its shape and nothing else,
@@ -247,11 +254,11 @@ Some things stay out of reach:
   Zenodo drops a range that runs backwards.
   A day that does not exist, such as the thirty first of June, is caught,
   but the twenty ninth of February is allowed in every year.
-- **The value of a custom field is only checked for its container type,**
-  that is whether it should be a list, an object or a single string.
-  The 91 custom fields carry as many different value schemas,
-  so a value of the right container type but the wrong content passes the hook
-  and is then dropped by Zenodo without a word.
+- **An EDTF level 2 date is not checked.**
+  The `date_submitted` and `date_defended` keys of the `thesis:thesis` custom field
+  accept qualifiers, unspecified digits and sets,
+  which are beyond what a pattern can describe,
+  so they are only checked for being strings.
 - **Existence is never checked.**
   The schema does not know whether an ORCID belongs to anyone,
   whether a DOI resolves,
@@ -282,3 +289,12 @@ pre-commit run --all
 - `check_zenodo_json/zenodo-derived-legacy-deposit.schema.json` is licensed under **CC0-1.0**,
   to make it easily reusable in a project using a different license.
 - The rest of the code is licensed under **Apache-2.0**.
+
+## Similar projects
+
+The following projects contain a draft-07 schema derived from Zenodo's legacy schema,
+and they were used as a starting point for this project:
+
+- [metadata-schema-zenodo](https://github.com/zenodraft/metadata-schema-zenodo) (schema only)
+- [zenodo_json_schema](https://github.com/rouault/zenodo_json_schema) (schema only)
+- [zenodo-validator](https://github.com/vsoch/zenodo-validator) (includes a GitHub action)

@@ -176,8 +176,57 @@ ACCEPTED = [
         {**MINIMAL, "custom": {"code:developmentStatus": {"id": "active"}}},
     ),
     (
+        "custom field holding a list of vocabulary entries",
+        {**MINIMAL, "custom": {"code:programmingLanguage": [{"id": "python"}]}},
+    ),
+    (
         "custom field holding a bare string",
-        {**MINIMAL, "custom": {"code:codeRepository": "https://x.y/z"}},
+        {**MINIMAL, "custom": {"code:codeRepository": "https://example.com/x"}},
+    ),
+    # `DoubleCF` builds a marshmallow `Float`, which reads a number written as a string.
+    (
+        "custom field holding a double as a string",
+        {**MINIMAL, "custom": {"dwc:decimalLatitude": ["51.05"]}},
+    ),
+    ("custom field holding an integer", {**MINIMAL, "custom": {"gbif:ampliconSize": [100]}}),
+    (
+        "custom field holding an iso date",
+        {**MINIMAL, "custom": {"dwc:dateIdentified": ["2026-08-25"]}},
+    ),
+    (
+        "custom field holding an edtf date with a time",
+        {**MINIMAL, "custom": {"ac:digitizationDate": ["2026-08-25T10:00:00+02:00"]}},
+    ),
+    (
+        "custom field holding an edtf interval",
+        {**MINIMAL, "custom": {"ac:digitizationDate": ["2026-08/2026-09"]}},
+    ),
+    (
+        "custom container fields",
+        {
+            **MINIMAL,
+            "custom": {
+                "journal:journal": {"title": "J", "issn": "0028-0836"},
+                "imprint:imprint": {"title": "B", "isbn": "978-3-16-148410-0", "edition": "2nd"},
+                "meeting:meeting": {
+                    "title": "C",
+                    "url": "https://example.com/c",
+                    "identifiers": [{"identifier": "10.5281/zenodo.10", "scheme": "doi"}],
+                },
+                # `date_submitted` is an EDTF level 2 date, which the schema does not describe.
+                "thesis:thesis": {"university": "Ghent University", "date_submitted": "2026-08~"},
+            },
+        },
+    ),
+    (
+        "custom field holding a list of objects",
+        {
+            **MINIMAL,
+            "custom": {
+                "legacy:subjects": [{"term": "X", "identifier": "http://x", "scheme": "url"}],
+                "obo:RO_0002453": [{"subject": ["Felis catus"], "object": ["Homo sapiens"]}],
+            },
+        },
     ),
     # `validate_metadata_schema` fires only when the loaded metadata is exactly one `publisher` key,
     # which cannot happen because `publication_date` is defaulted as well.
@@ -422,6 +471,58 @@ REJECTED = [
         "custom field holding a string instead of an object",
         {**MINIMAL, "custom": {"thesis:thesis": "Ghent University"}},
     ),
+    (
+        "vocabulary entry written as a bare string",
+        {**MINIMAL, "custom": {"code:programmingLanguage": ["python"]}},
+    ),
+    # An identifier Zenodo does not know is the one custom value it refuses out loud,
+    # with a 400 rather than a silent drop, and it is matched without lower casing.
+    (
+        "unknown vocabulary identifier",
+        {**MINIMAL, "custom": {"code:programmingLanguage": [{"id": "pyhton"}]}},
+    ),
+    (
+        "vocabulary identifier in another case",
+        {**MINIMAL, "custom": {"code:programmingLanguage": [{"id": "Python"}]}},
+    ),
+    # `VocabularyRelationSchema` dumps a title but strips it again on load.
+    (
+        "title next to a vocabulary identifier",
+        {**MINIMAL, "custom": {"code:developmentStatus": {"id": "active", "title": {"en": "A"}}}},
+    ),
+    (
+        "vocabulary entry in a list where Zenodo wants one",
+        {**MINIMAL, "custom": {"code:developmentStatus": [{"id": "active"}]}},
+    ),
+    (
+        "custom field holding a url with a one letter top level domain",
+        {**MINIMAL, "custom": {"code:codeRepository": "https://x.y/z"}},
+    ),
+    # `IntegerCF` passes `strict=True`, so marshmallow reads neither of these.
+    (
+        "custom field holding an integer as a string",
+        {**MINIMAL, "custom": {"gbif:ampliconSize": ["100"]}},
+    ),
+    (
+        "custom field holding a fractional integer",
+        {**MINIMAL, "custom": {"gbif:ampliconSize": [100.5]}},
+    ),
+    (
+        "custom field holding an incomplete iso date",
+        {**MINIMAL, "custom": {"dwc:dateIdentified": ["2026-08"]}},
+    ),
+    # `EDTFDateStringCF` accepts level 0 only, so a qualifier is out of reach.
+    (
+        "custom field holding an edtf level 2 date",
+        {**MINIMAL, "custom": {"ac:digitizationDate": ["2026-08~"]}},
+    ),
+    (
+        "unknown key in a custom container field",
+        {**MINIMAL, "custom": {"thesis:thesis": {"university": "Ghent University", "gown": "X"}}},
+    ),
+    # `clear_none` drops an empty container before the deposit is built.
+    ("empty custom field", {**MINIMAL, "custom": {"dwc:family": []}}),
+    ("empty custom container field", {**MINIMAL, "custom": {"journal:journal": {}}}),
 ]
 
 
