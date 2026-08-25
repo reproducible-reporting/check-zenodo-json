@@ -59,6 +59,12 @@ ignore = [
 ]
 
 [tool.pymarkdown]
-plugins.MD013.line_length = 100
+# Report unknown or mistyped settings instead of silently ignoring them.
+mode.strict-config = true
+# Skill and agent definitions carry YAML front matter,
+# which pymarkdown parses as a setext heading unless this extension is on.
+extensions.front-matter.enabled = true
+
+plugins.md013.line_length = 100
 # The changelog repeats a subheading such as "Fixed" under every release.
-plugins.MD024.siblings_only = true
+plugins.md024.siblings_only = true

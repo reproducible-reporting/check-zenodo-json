@@ -48,6 +48,3 @@ repos:
   rev: v0.9.18
   hooks:
   - id: pymarkdown
-    # Skill and agent definitions carry YAML front matter,
-    # which pymarkdown parses as a setext heading unless this extension is on.
-    args: ["--set", "extensions.front-matter.enabled=$!True", "scan"]
