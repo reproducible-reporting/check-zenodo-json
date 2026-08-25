@@ -1,0 +1,1628 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/reproducible-reporting/check-zenodo-json/main/check_zenodo_json/zenodo-derived-legacy-deposit.schema.json",
+  "title": "Zenodo deposit metadata (.zenodo.json)",
+  "description": "Metadata that Zenodo reads from a `.zenodo.json` file in a GitHub repository when it archives a release. Zenodo translates the file with the legacy deserializer in zenodo-rdm (`zenodo_rdm.legacy.deserializers`), which silently drops keys it does not know, so an unrecognised key here is a key Zenodo would ignore.",
+  "$comment": "Derived on 2026-08-25 from the loader Zenodo actually runs, zenodo_rdm.legacy.deserializers at zenodo/zenodo-rdm@6386403, with the license vocabulary taken from zenodo/zenodo-rdm legacy/zenodo_legacy/data and the custom field names from zenodo_rdm.custom_fields and invenio_rdm_records.contrib. The resource type, contributor role, relation type and date type vocabularies are taken from what Zenodo has deployed, read on 2026-08-25 from https://zenodo.org/api/vocabularies/{resourcetypes,contributorsroles,relationtypes,datetypes}, because zenodo-rdm overrides only some vocabularies and inherits the rest from whichever invenio-rdm-records fixture its instance was built with, which lags that project's main branch. What becomes of the loaded metadata was read from zenodo_rdm.github.release and invenio_rdm_records.services.github, which build the record when Zenodo archives a GitHub release. That commit was chosen because Zenodo publishes no version endpoint: the InvenioRDM version in the generator meta tag of every page is too coarse to identify a deployment, so the running code can only be bracketed. On 2026-08-25 zenodo.org served a build between v25.2.2 and v25.2.5, read from its frontend bundler and from two behaviours that changed in known releases, and 6386403 is v25.2.5 plus one commit that touches only a deployment script. Nothing this schema derives from moves inside that bracket. sandbox.zenodo.org ran v26.1.0 or later on the same day. Zenodo extends those vocabularies over time, so a value rejected here may have become valid since.",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "$comment": "`load_access` raises \"Unknown access type\" for an embargo without a date.",
+      "if": {
+        "properties": {
+          "access_right": {
+            "const": "embargoed"
+          }
+        },
+        "required": [
+          "access_right"
+        ]
+      },
+      "then": {
+        "required": [
+          "embargo_date"
+        ]
+      }
+    },
+    {
+      "$comment": "`load_access` reads `embargo_date` only in the embargoed branch, so Zenodo drops it otherwise.",
+      "if": {
+        "required": [
+          "embargo_date"
+        ]
+      },
+      "then": {
+        "properties": {
+          "access_right": {
+            "const": "embargoed"
+          }
+        },
+        "required": [
+          "access_right"
+        ]
+      }
+    },
+    {
+      "$comment": "`load_upload_type` reads only `<upload_type>_type`, so Zenodo drops a subtype that does not match, or one without an `upload_type`.",
+      "if": {
+        "required": [
+          "publication_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "upload_type": {
+            "const": "publication"
+          }
+        },
+        "required": [
+          "upload_type"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "image_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "upload_type": {
+            "const": "image"
+          }
+        },
+        "required": [
+          "upload_type"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "software_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "upload_type": {
+            "const": "software"
+          }
+        },
+        "required": [
+          "upload_type"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "upload_type": {
+      "description": "Type of the deposit. Combined with the matching `*_type` field into a resource type.",
+      "type": "string",
+      "enum": [
+        "dataset",
+        "event",
+        "image",
+        "lesson",
+        "model",
+        "other",
+        "physicalobject",
+        "poster",
+        "presentation",
+        "publication",
+        "software",
+        "video",
+        "workflow"
+      ]
+    },
+    "publication_type": {
+      "description": "Subtype, used only when `upload_type` is `publication`.",
+      "type": "string",
+      "enum": [
+        "annotationcollection",
+        "article",
+        "book",
+        "conferencepaper",
+        "conferenceproceeding",
+        "datamanagementplan",
+        "datapaper",
+        "deliverable",
+        "dissertation",
+        "journal",
+        "milestone",
+        "other",
+        "patent",
+        "peerreview",
+        "preprint",
+        "proposal",
+        "report",
+        "section",
+        "softwaredocumentation",
+        "standard",
+        "taxonomictreatment",
+        "technicalnote",
+        "workingpaper"
+      ]
+    },
+    "image_type": {
+      "description": "Subtype, used only when `upload_type` is `image`.",
+      "type": "string",
+      "enum": [
+        "diagram",
+        "drawing",
+        "figure",
+        "other",
+        "photo",
+        "plot"
+      ]
+    },
+    "software_type": {
+      "description": "Subtype, used only when `upload_type` is `software`.",
+      "type": "string",
+      "enum": [
+        "computationalnotebook"
+      ]
+    },
+    "title": {
+      "description": "Title of the deposit.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Description of the deposit. A subset of HTML is allowed.",
+      "type": "string"
+    },
+    "creators": {
+      "description": "Creators of the deposit, in order of importance.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/person"
+      }
+    },
+    "contributors": {
+      "description": "Contributors of the deposit, each with a role.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/contributor"
+      }
+    },
+    "thesis_supervisors": {
+      "description": "Supervisors of the thesis, loaded as contributors with the `supervisor` role.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/person"
+      }
+    },
+    "publication_date": {
+      "description": "Publication date, as an EDTF level 0 date (`YYYY`, `YYYY-MM` or `YYYY-MM-DD`) or an interval of two such dates. Defaults to the date of the deposit.",
+      "type": "string",
+      "pattern": "^\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?(?:/\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?)?$"
+    },
+    "doi": {
+      "description": "Digital Object Identifier, when the deposit already has one.",
+      "type": "string"
+    },
+    "version": {
+      "description": "Version of the deposit. Free text, but semantic versioning is recommended.",
+      "type": "string"
+    },
+    "language": {
+      "description": "Language of the deposit, as a lower case ISO 639-1 or ISO 639-2/3 code. Zenodo passes a three letter code through unchanged and looks a two letter code up by its lower case form, so an upper case code does not resolve to a language.",
+      "type": "string",
+      "pattern": "^[a-z]{2,3}$"
+    },
+    "keywords": {
+      "description": "Free-form keywords, loaded as subjects.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subjects": {
+      "description": "Subjects from a controlled vocabulary.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "term": {
+            "description": "Term of the subject.",
+            "type": "string"
+          },
+          "identifier": {
+            "description": "Identifier of the subject term.",
+            "type": "string"
+          },
+          "scheme": {
+            "description": "Scheme the identifier belongs to.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "license": {
+      "$ref": "#/definitions/license"
+    },
+    "access_right": {
+      "description": "Access right of the deposit.",
+      "type": "string",
+      "enum": [
+        "open",
+        "embargoed",
+        "restricted",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "embargo_date": {
+      "description": "Date the deposit becomes public. Required when `access_right` is `embargoed`, and read only then.",
+      "type": "string",
+      "pattern": "^\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2\\d))$"
+    },
+    "related_identifiers": {
+      "description": "Identifiers of related records, each with a relation type.",
+      "type": "array",
+      "items": {
+        "$comment": "`split_identifiers` moves an `isAlternateIdentifier` entry to `alternate_identifiers`, where `load_alternate_identifiers` reads only `identifier`, so a `resource_type` is dropped.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identifier",
+          "relation"
+        ],
+        "if": {
+          "properties": {
+            "relation": {
+              "const": "isAlternateIdentifier"
+            }
+          },
+          "required": [
+            "relation"
+          ]
+        },
+        "then": {
+          "not": {
+            "required": [
+              "resource_type"
+            ]
+          }
+        },
+        "properties": {
+          "identifier": {
+            "description": "The related identifier. Its scheme is detected from the value itself.",
+            "type": "string"
+          },
+          "relation": {
+            "description": "Relation of this deposit to the related identifier. Zenodo lower cases the value before it looks it up, so it also accepts other capitalisations.",
+            "type": "string",
+            "enum": [
+              "cites",
+              "compiles",
+              "continues",
+              "describes",
+              "documents",
+              "hasMetadata",
+              "hasPart",
+              "hasVersion",
+              "isAlternateIdentifier",
+              "isCitedBy",
+              "isCompiledBy",
+              "isContinuedBy",
+              "isDerivedFrom",
+              "isDescribedBy",
+              "isDocumentedBy",
+              "isIdenticalTo",
+              "isMetadataFor",
+              "isNewVersionOf",
+              "isObsoletedBy",
+              "isOriginalFormOf",
+              "isOrignialFormOf",
+              "isPartOf",
+              "isPreviousVersionOf",
+              "isPublishedIn",
+              "isReferencedBy",
+              "isRequiredBy",
+              "isReviewedBy",
+              "isSourceOf",
+              "isSupplementedBy",
+              "isSupplementTo",
+              "isVariantFormOf",
+              "isVersionOf",
+              "obsoletes",
+              "references",
+              "requires",
+              "reviews"
+            ]
+          },
+          "resource_type": {
+            "description": "Resource type of the related identifier.",
+            "type": "string",
+            "enum": [
+              "dataset",
+              "event",
+              "image",
+              "image-diagram",
+              "image-drawing",
+              "image-figure",
+              "image-other",
+              "image-photo",
+              "image-plot",
+              "lesson",
+              "model",
+              "other",
+              "physicalobject",
+              "poster",
+              "presentation",
+              "publication",
+              "publication-annotationcollection",
+              "publication-article",
+              "publication-book",
+              "publication-conferencepaper",
+              "publication-conferenceproceeding",
+              "publication-datamanagementplan",
+              "publication-datapaper",
+              "publication-deliverable",
+              "publication-dissertation",
+              "publication-journal",
+              "publication-milestone",
+              "publication-other",
+              "publication-patent",
+              "publication-peerreview",
+              "publication-preprint",
+              "publication-proposal",
+              "publication-report",
+              "publication-section",
+              "publication-softwaredocumentation",
+              "publication-standard",
+              "publication-taxonomictreatment",
+              "publication-technicalnote",
+              "publication-workingpaper",
+              "software",
+              "software-computationalnotebook",
+              "video",
+              "workflow"
+            ]
+          }
+        }
+      }
+    },
+    "alternate_identifiers": {
+      "description": "Identifiers of this same deposit elsewhere.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identifier"
+        ],
+        "properties": {
+          "identifier": {
+            "description": "The alternate identifier.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dates": {
+      "description": "Dates relevant to the deposit. At least one of `start` and `end` is required.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "start"
+            ]
+          },
+          {
+            "required": [
+              "end"
+            ]
+          }
+        ],
+        "properties": {
+          "type": {
+            "description": "Type of the date. Zenodo lower cases the value before it looks it up, so it also accepts other capitalisations.",
+            "type": "string",
+            "enum": [
+              "accepted",
+              "available",
+              "collected",
+              "copyrighted",
+              "created",
+              "issued",
+              "other",
+              "submitted",
+              "updated",
+              "valid",
+              "withdrawn"
+            ]
+          },
+          "start": {
+            "description": "Start of the date range, or the date itself, as an EDTF level 0 date (`YYYY`, `YYYY-MM` or `YYYY-MM-DD`).",
+            "type": "string",
+            "pattern": "^\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?$"
+          },
+          "end": {
+            "description": "End of the date range, or the date itself, as an EDTF level 0 date (`YYYY`, `YYYY-MM` or `YYYY-MM-DD`).",
+            "type": "string",
+            "pattern": "^\\d{4}(?:-(?:(?:0[13578]|1[02])(?:-(?:0[1-9]|[12]\\d|3[01]))?|(?:0[469]|11)(?:-(?:0[1-9]|[12]\\d|30))?|02(?:-(?:0[1-9]|1\\d|2\\d))?))?$"
+          },
+          "description": {
+            "description": "Free-text description of the date.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "locations": {
+      "description": "Locations relevant to the deposit.",
+      "type": "array",
+      "items": {
+        "$comment": "`load_locations` builds the point under `if lat and lon`, so a lone coordinate is dropped.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "place"
+        ],
+        "dependencies": {
+          "lat": [
+            "lon"
+          ],
+          "lon": [
+            "lat"
+          ]
+        },
+        "properties": {
+          "place": {
+            "description": "Name of the place.",
+            "type": "string"
+          },
+          "lat": {
+            "description": "Latitude. Required together with `lon`.",
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "description": "Longitude. Required together with `lat`.",
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "description": {
+            "description": "Free-text description of the location.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "references": {
+      "description": "Bibliographic references, as free-text strings.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "grants": {
+      "description": "Funding awards, as `<funder DOI>::<award id>`. A bare award id is read as a European Commission grant.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "description": "Award identifier, optionally prefixed with the funder DOI and `::`.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "communities": {
+      "description": "Communities the deposit is submitted to.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identifier"
+        ],
+        "properties": {
+          "identifier": {
+            "description": "Identifier of the community.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "description": "Additional notes, loaded as an extra description.",
+      "type": "string"
+    },
+    "method": {
+      "description": "Methodology of the work, loaded as an extra description.",
+      "type": "string"
+    },
+    "custom": {
+      "description": "Custom fields, keyed by their namespaced name, such as `dwc:family`.",
+      "$comment": "Only the field names and the container type of their values are enumerated. What goes inside is left unconstrained, because the 91 fields carry as many different value schemas. A value of the wrong shape is dropped without a word, so `custom` is the one place where this schema cannot promise that everything it accepts survives. The container type of `obo:RO_0002453` is unknown: no value reached the record in testing.",
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "ac:associatedSpecimenReference",
+          "ac:captureDevice",
+          "ac:digitizationDate",
+          "ac:physicalSetting",
+          "ac:resourceCreationTechnique",
+          "ac:subjectOrientation",
+          "ac:subjectPart",
+          "code:codeRepository",
+          "code:developmentStatus",
+          "code:programmingLanguage",
+          "dc:creator",
+          "dc:rightsHolder",
+          "dwc:associatedSequences",
+          "dwc:basisOfRecord",
+          "dwc:catalogNumber",
+          "dwc:class",
+          "dwc:collectionCode",
+          "dwc:country",
+          "dwc:countryCode",
+          "dwc:county",
+          "dwc:datasetID",
+          "dwc:dateIdentified",
+          "dwc:decimalLatitude",
+          "dwc:decimalLongitude",
+          "dwc:eventDate",
+          "dwc:eventID",
+          "dwc:family",
+          "dwc:genus",
+          "dwc:geodeticDatum",
+          "dwc:habitat",
+          "dwc:identifiedBy",
+          "dwc:individualCount",
+          "dwc:institutionCode",
+          "dwc:kingdom",
+          "dwc:lifeStage",
+          "dwc:locality",
+          "dwc:locationID",
+          "dwc:materialSampleID",
+          "dwc:namePublishedInID",
+          "dwc:namePublishedInYear",
+          "dwc:occurrenceID",
+          "dwc:occurrenceStatus",
+          "dwc:order",
+          "dwc:organismQuantity",
+          "dwc:organismQuantityType",
+          "dwc:otherCatalogNumbers",
+          "dwc:parentEventID",
+          "dwc:phylum",
+          "dwc:preparations",
+          "dwc:recordedBy",
+          "dwc:sampleSizeUnit",
+          "dwc:sampleSizeValue",
+          "dwc:samplingEffort",
+          "dwc:samplingProtocol",
+          "dwc:scientificName",
+          "dwc:scientificNameAuthorship",
+          "dwc:scientificNameID",
+          "dwc:sex",
+          "dwc:specificEpithet",
+          "dwc:stateProvince",
+          "dwc:taxonID",
+          "dwc:taxonRank",
+          "dwc:taxonomicStatus",
+          "dwc:typeStatus",
+          "dwc:verbatimElevation",
+          "dwc:verbatimEventDate",
+          "gbif-dwc:identifiedByID",
+          "gbif-dwc:recordedByID",
+          "gbif:DNA_sequence",
+          "gbif:ampliconSize",
+          "gbif:pcr_primer_forward",
+          "gbif:pcr_primer_name_forward",
+          "gbif:pcr_primer_name_reverse",
+          "gbif:pcr_primer_reverse",
+          "imprint:imprint",
+          "journal:journal",
+          "legacy:communities",
+          "legacy:subjects",
+          "meeting:meeting",
+          "mixs:0000012",
+          "mixs:0000013",
+          "mixs:0000014",
+          "mixs:0000044",
+          "mixs:0000045",
+          "mixs:0000049",
+          "mixs:0000050",
+          "mixs:0000058",
+          "mixs:0000090",
+          "obo:RO_0002453",
+          "openbiodiv:TaxonomicConceptLabel",
+          "thesis:thesis"
+        ]
+      },
+      "properties": {
+        "ac:associatedSpecimenReference": {
+          "type": "array"
+        },
+        "ac:captureDevice": {
+          "type": "array"
+        },
+        "ac:digitizationDate": {
+          "type": "array"
+        },
+        "ac:physicalSetting": {
+          "type": "array"
+        },
+        "ac:resourceCreationTechnique": {
+          "type": "array"
+        },
+        "ac:subjectOrientation": {
+          "type": "array"
+        },
+        "ac:subjectPart": {
+          "type": "array"
+        },
+        "code:codeRepository": {
+          "type": "string"
+        },
+        "code:developmentStatus": {
+          "type": "object"
+        },
+        "code:programmingLanguage": {
+          "type": "array"
+        },
+        "dc:creator": {
+          "type": "array"
+        },
+        "dc:rightsHolder": {
+          "type": "array"
+        },
+        "dwc:associatedSequences": {
+          "type": "array"
+        },
+        "dwc:basisOfRecord": {
+          "type": "array"
+        },
+        "dwc:catalogNumber": {
+          "type": "array"
+        },
+        "dwc:class": {
+          "type": "array"
+        },
+        "dwc:collectionCode": {
+          "type": "array"
+        },
+        "dwc:country": {
+          "type": "array"
+        },
+        "dwc:countryCode": {
+          "type": "array"
+        },
+        "dwc:county": {
+          "type": "array"
+        },
+        "dwc:datasetID": {
+          "type": "array"
+        },
+        "dwc:dateIdentified": {
+          "type": "array"
+        },
+        "dwc:decimalLatitude": {
+          "type": "array"
+        },
+        "dwc:decimalLongitude": {
+          "type": "array"
+        },
+        "dwc:eventDate": {
+          "type": "array"
+        },
+        "dwc:eventID": {
+          "type": "array"
+        },
+        "dwc:family": {
+          "type": "array"
+        },
+        "dwc:genus": {
+          "type": "array"
+        },
+        "dwc:geodeticDatum": {
+          "type": "array"
+        },
+        "dwc:habitat": {
+          "type": "array"
+        },
+        "dwc:identifiedBy": {
+          "type": "array"
+        },
+        "dwc:individualCount": {
+          "type": "array"
+        },
+        "dwc:institutionCode": {
+          "type": "array"
+        },
+        "dwc:kingdom": {
+          "type": "array"
+        },
+        "dwc:lifeStage": {
+          "type": "array"
+        },
+        "dwc:locality": {
+          "type": "array"
+        },
+        "dwc:locationID": {
+          "type": "array"
+        },
+        "dwc:materialSampleID": {
+          "type": "array"
+        },
+        "dwc:namePublishedInID": {
+          "type": "array"
+        },
+        "dwc:namePublishedInYear": {
+          "type": "array"
+        },
+        "dwc:occurrenceID": {
+          "type": "array"
+        },
+        "dwc:occurrenceStatus": {
+          "type": "array"
+        },
+        "dwc:order": {
+          "type": "array"
+        },
+        "dwc:organismQuantity": {
+          "type": "array"
+        },
+        "dwc:organismQuantityType": {
+          "type": "array"
+        },
+        "dwc:otherCatalogNumbers": {
+          "type": "array"
+        },
+        "dwc:parentEventID": {
+          "type": "array"
+        },
+        "dwc:phylum": {
+          "type": "array"
+        },
+        "dwc:preparations": {
+          "type": "array"
+        },
+        "dwc:recordedBy": {
+          "type": "array"
+        },
+        "dwc:sampleSizeUnit": {
+          "type": "array"
+        },
+        "dwc:sampleSizeValue": {
+          "type": "array"
+        },
+        "dwc:samplingEffort": {
+          "type": "array"
+        },
+        "dwc:samplingProtocol": {
+          "type": "array"
+        },
+        "dwc:scientificName": {
+          "type": "array"
+        },
+        "dwc:scientificNameAuthorship": {
+          "type": "array"
+        },
+        "dwc:scientificNameID": {
+          "type": "array"
+        },
+        "dwc:sex": {
+          "type": "array"
+        },
+        "dwc:specificEpithet": {
+          "type": "array"
+        },
+        "dwc:stateProvince": {
+          "type": "array"
+        },
+        "dwc:taxonID": {
+          "type": "array"
+        },
+        "dwc:taxonRank": {
+          "type": "array"
+        },
+        "dwc:taxonomicStatus": {
+          "type": "array"
+        },
+        "dwc:typeStatus": {
+          "type": "array"
+        },
+        "dwc:verbatimElevation": {
+          "type": "array"
+        },
+        "dwc:verbatimEventDate": {
+          "type": "array"
+        },
+        "gbif-dwc:identifiedByID": {
+          "type": "array"
+        },
+        "gbif-dwc:recordedByID": {
+          "type": "array"
+        },
+        "gbif:DNA_sequence": {
+          "type": "array"
+        },
+        "gbif:ampliconSize": {
+          "type": "array"
+        },
+        "gbif:pcr_primer_forward": {
+          "type": "array"
+        },
+        "gbif:pcr_primer_name_forward": {
+          "type": "array"
+        },
+        "gbif:pcr_primer_name_reverse": {
+          "type": "array"
+        },
+        "gbif:pcr_primer_reverse": {
+          "type": "array"
+        },
+        "imprint:imprint": {
+          "type": "object"
+        },
+        "journal:journal": {
+          "type": "object"
+        },
+        "legacy:communities": {
+          "type": "array"
+        },
+        "legacy:subjects": {
+          "type": "array"
+        },
+        "meeting:meeting": {
+          "type": "object"
+        },
+        "mixs:0000012": {
+          "type": "array"
+        },
+        "mixs:0000013": {
+          "type": "array"
+        },
+        "mixs:0000014": {
+          "type": "array"
+        },
+        "mixs:0000044": {
+          "type": "array"
+        },
+        "mixs:0000045": {
+          "type": "array"
+        },
+        "mixs:0000049": {
+          "type": "array"
+        },
+        "mixs:0000050": {
+          "type": "array"
+        },
+        "mixs:0000058": {
+          "type": "array"
+        },
+        "mixs:0000090": {
+          "type": "array"
+        },
+        "openbiodiv:TaxonomicConceptLabel": {
+          "type": "array"
+        },
+        "thesis:thesis": {
+          "type": "object"
+        }
+      }
+    },
+    "imprint_publisher": {
+      "description": "Publisher of the deposit. Defaults to `Zenodo`.",
+      "type": "string"
+    },
+    "imprint_isbn": {
+      "description": "ISBN of the book the deposit is part of, as ten or thirteen digits, optionally grouped with hyphens or spaces. The check digit is not verified here, and Zenodo drops an ISBN that fails it.",
+      "type": "string",
+      "pattern": "^(?:ISBN[- ]?(?:10|13)?:?[- ]?)?[0-9][0-9 -]{8,16}[0-9Xx]$"
+    },
+    "imprint_place": {
+      "description": "Place the book was published.",
+      "type": "string"
+    },
+    "partof_title": {
+      "description": "Title of the book the deposit is a section of.",
+      "type": "string"
+    },
+    "partof_pages": {
+      "description": "Pages of the book the deposit covers.",
+      "type": "string"
+    },
+    "journal_title": {
+      "description": "Title of the journal.",
+      "type": "string"
+    },
+    "journal_volume": {
+      "description": "Volume of the journal.",
+      "type": "string"
+    },
+    "journal_issue": {
+      "description": "Issue of the journal.",
+      "type": "string"
+    },
+    "journal_pages": {
+      "description": "Pages within the journal issue.",
+      "type": "string"
+    },
+    "conference_title": {
+      "description": "Title of the conference.",
+      "type": "string"
+    },
+    "conference_acronym": {
+      "description": "Acronym of the conference.",
+      "type": "string"
+    },
+    "conference_dates": {
+      "description": "Dates of the conference, as free text.",
+      "type": "string"
+    },
+    "conference_place": {
+      "description": "Place of the conference, as free text.",
+      "type": "string"
+    },
+    "conference_url": {
+      "description": "URL of the conference.",
+      "type": "string"
+    },
+    "conference_session": {
+      "description": "Session within the conference.",
+      "type": "string"
+    },
+    "conference_session_part": {
+      "description": "Part of the session within the conference.",
+      "type": "string"
+    },
+    "thesis_university": {
+      "description": "University awarding the thesis.",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "Full name of the person or organisation, in `family, given` order for a person.",
+          "type": "string"
+        },
+        "affiliation": {
+          "description": "Affiliation of the person for the purpose of this specific record.",
+          "type": "string"
+        },
+        "orcid": {
+          "description": "ORCID identifier of the person, optionally as an `orcid.org` URL, and with the groups of four digits optionally run together. Zenodo normalises the value to the hyphenated form without the prefix. The check digit is not verified here, and an identifier that fails it costs the person their name in the deposit.",
+          "type": "string",
+          "pattern": "^(?:https?://orcid\\.org/)?(?:\\d{4}[- ]?){3}\\d{3}[0-9Xx]$"
+        },
+        "gnd": {
+          "description": "Gemeinsame Normdatei identifier of the person, optionally prefixed with `gnd:` or a `d-nb.info` URL. A value outside this shape makes the load fail with a server error rather than a message.",
+          "type": "string",
+          "pattern": "^(?:gnd:|GND:|https?://d-nb\\.info/gnd/|d-nb\\.info/gnd/)?(?:1[012]?\\d{7}[0-9X]|[47]\\d{6}-\\d|[1-9]\\d{0,7}-[0-9X]|3\\d{7}[0-9X])$"
+        }
+      }
+    },
+    "contributor": {
+      "$comment": "Repeats the properties of `person`, because draft-07 evaluates `additionalProperties` against the properties of the same schema object, so composing the two with `allOf` would reject every inherited key.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "Full name of the person or organisation, in `family, given` order for a person.",
+          "type": "string"
+        },
+        "affiliation": {
+          "description": "Affiliation of the person for the purpose of this specific record.",
+          "type": "string"
+        },
+        "orcid": {
+          "description": "ORCID identifier of the person, optionally as an `orcid.org` URL, and with the groups of four digits optionally run together. Zenodo normalises the value to the hyphenated form without the prefix. The check digit is not verified here, and an identifier that fails it costs the person their name in the deposit.",
+          "type": "string",
+          "pattern": "^(?:https?://orcid\\.org/)?(?:\\d{4}[- ]?){3}\\d{3}[0-9Xx]$"
+        },
+        "gnd": {
+          "description": "Gemeinsame Normdatei identifier of the person, optionally prefixed with `gnd:` or a `d-nb.info` URL. A value outside this shape makes the load fail with a server error rather than a message.",
+          "type": "string",
+          "pattern": "^(?:gnd:|GND:|https?://d-nb\\.info/gnd/|d-nb\\.info/gnd/)?(?:1[012]?\\d{7}[0-9X]|[47]\\d{6}-\\d|[1-9]\\d{0,7}-[0-9X]|3\\d{7}[0-9X])$"
+        },
+        "type": {
+          "description": "Role of the contributor. Zenodo lower cases the value before it looks it up, so it also accepts other capitalisations.",
+          "type": "string",
+          "enum": [
+            "Annotator",
+            "ContactPerson",
+            "DataCollector",
+            "DataCurator",
+            "DataManager",
+            "Distributor",
+            "Editor",
+            "HostingInstitution",
+            "Other",
+            "Producer",
+            "ProjectLeader",
+            "ProjectManager",
+            "ProjectMember",
+            "RegistrationAgency",
+            "RegistrationAuthority",
+            "RelatedPerson",
+            "ResearchGroup",
+            "Researcher",
+            "RightsHolder",
+            "Sponsor",
+            "Supervisor",
+            "WorkPackageLeader"
+          ]
+        }
+      }
+    },
+    "license_id": {
+      "type": "string",
+      "enum": [
+        "0bsd",
+        "aal",
+        "abstyles",
+        "adobe-2006",
+        "adobe-glyph",
+        "adsl",
+        "afl-1.1",
+        "afl-1.2",
+        "afl-2.0",
+        "afl-2.1",
+        "afl-3.0",
+        "afmparse",
+        "against-drm",
+        "agpl-1.0",
+        "agpl-1.0-only",
+        "agpl-1.0-or-later",
+        "agpl-3.0",
+        "agpl-3.0-only",
+        "agpl-3.0-or-later",
+        "agpl-v3",
+        "aladdin",
+        "amdplpa",
+        "aml",
+        "ampas",
+        "antlr-pd",
+        "antlr-pd-fallback",
+        "apache",
+        "apache-1.0",
+        "apache-1.1",
+        "apache-2.0",
+        "apache2.0",
+        "apafml",
+        "apgl-v3",
+        "apl-1.0",
+        "apl1.0",
+        "apsl-1.0",
+        "apsl-1.1",
+        "apsl-1.2",
+        "apsl-2.0",
+        "artistic-1.0",
+        "artistic-1.0-cl8",
+        "artistic-1.0-perl",
+        "artistic-2.0",
+        "artistic-license-2.0",
+        "attribution",
+        "bahyph",
+        "barr",
+        "beerware",
+        "bittorrent-1.0",
+        "bittorrent-1.1",
+        "blessing",
+        "blueoak-1.0.0",
+        "borceux",
+        "bsd-1-clause",
+        "bsd-2-clause",
+        "bsd-2-clause-freebsd",
+        "bsd-2-clause-netbsd",
+        "bsd-2-clause-patent",
+        "bsd-2-clause-views",
+        "bsd-3-clause",
+        "bsd-3-clause-attribution",
+        "bsd-3-clause-clear",
+        "bsd-3-clause-lbnl",
+        "bsd-3-clause-no-nuclear-license",
+        "bsd-3-clause-no-nuclear-license-2014",
+        "bsd-3-clause-no-nuclear-warranty",
+        "bsd-3-clause-open-mpi",
+        "bsd-4-clause",
+        "bsd-4-clause-uc",
+        "bsd-license",
+        "bsd-protection",
+        "bsd-source-code",
+        "bsl-1.0",
+        "bsl1.0",
+        "busl-1.1",
+        "bzip2-1.0.5",
+        "bzip2-1.0.6",
+        "ca-tosl1.1",
+        "cal-1.0",
+        "cal-1.0-combined-work-exception",
+        "caldera",
+        "canada-crown",
+        "catosl-1.1",
+        "cc-by",
+        "cc-by-1.0",
+        "cc-by-2.0",
+        "cc-by-2.5",
+        "cc-by-3.0",
+        "cc-by-3.0-at",
+        "cc-by-3.0-us",
+        "cc-by-4.0",
+        "cc-by-nc-1.0",
+        "cc-by-nc-2.0",
+        "cc-by-nc-2.5",
+        "cc-by-nc-3.0",
+        "cc-by-nc-4.0",
+        "cc-by-nc-nd-1.0",
+        "cc-by-nc-nd-2.0",
+        "cc-by-nc-nd-2.5",
+        "cc-by-nc-nd-3.0",
+        "cc-by-nc-nd-3.0-igo",
+        "cc-by-nc-nd-4.0",
+        "cc-by-nc-sa-1.0",
+        "cc-by-nc-sa-2.0",
+        "cc-by-nc-sa-2.5",
+        "cc-by-nc-sa-3.0",
+        "cc-by-nc-sa-4.0",
+        "cc-by-nd-1.0",
+        "cc-by-nd-2.0",
+        "cc-by-nd-2.5",
+        "cc-by-nd-3.0",
+        "cc-by-nd-4.0",
+        "cc-by-sa",
+        "cc-by-sa-1.0",
+        "cc-by-sa-2.0",
+        "cc-by-sa-2.0-uk",
+        "cc-by-sa-2.5",
+        "cc-by-sa-3.0",
+        "cc-by-sa-3.0-at",
+        "cc-by-sa-4.0",
+        "cc-nc",
+        "cc-pddc",
+        "cc-zero",
+        "cc0-1.0",
+        "cddl-1.0",
+        "cddl-1.1",
+        "cddl1",
+        "cdla-permissive-1.0",
+        "cdla-sharing-1.0",
+        "cecill-1.0",
+        "cecill-1.1",
+        "cecill-2.0",
+        "cecill-2.1",
+        "cecill-b",
+        "cecill-c",
+        "cern-ohl-1.1",
+        "cern-ohl-1.2",
+        "cern-ohl-p-2.0",
+        "cern-ohl-s-2.0",
+        "cern-ohl-w-2.0",
+        "clartistic",
+        "cnri-jython",
+        "cnri-python",
+        "cnri-python-gpl-compatible",
+        "condor-1.1",
+        "copyleft-next-0.3.0",
+        "copyleft-next-0.3.1",
+        "cpal-1.0",
+        "cpal_1.0",
+        "cpl-1.0",
+        "cpol-1.02",
+        "crossword",
+        "crystalstacker",
+        "cua-opl-1.0",
+        "cuaoffice",
+        "cube",
+        "curl",
+        "d-fsl-1.0",
+        "diffmark",
+        "dli-model-use",
+        "doc",
+        "dotseqn",
+        "dsdp",
+        "dsl",
+        "dvipdfm",
+        "ecl-1.0",
+        "ecl-2.0",
+        "ecl2",
+        "eclipse-1.0",
+        "efl-1.0",
+        "efl-2.0",
+        "egenix",
+        "eiffel",
+        "entessa",
+        "epics",
+        "epl-1.0",
+        "epl-2.0",
+        "erlpl-1.1",
+        "etalab-2.0",
+        "eudatagrid",
+        "eupl-1.0",
+        "eupl-1.1",
+        "eupl-1.2",
+        "eurofound",
+        "eurosym",
+        "fair",
+        "fal",
+        "frameworx",
+        "frameworx-1.0",
+        "freeimage",
+        "fsfap",
+        "fsful",
+        "fsfullr",
+        "ftl",
+        "geo-no-fee-unrestricted",
+        "geogratis",
+        "gfdl",
+        "gfdl-1.1",
+        "gfdl-1.1-invariants-only",
+        "gfdl-1.1-invariants-or-later",
+        "gfdl-1.1-no-invariants-only",
+        "gfdl-1.1-no-invariants-or-later",
+        "gfdl-1.1-only",
+        "gfdl-1.1-or-later",
+        "gfdl-1.2",
+        "gfdl-1.2-invariants-only",
+        "gfdl-1.2-invariants-or-later",
+        "gfdl-1.2-no-invariants-only",
+        "gfdl-1.2-no-invariants-or-later",
+        "gfdl-1.2-only",
+        "gfdl-1.2-or-later",
+        "gfdl-1.3",
+        "gfdl-1.3-invariants-only",
+        "gfdl-1.3-invariants-or-later",
+        "gfdl-1.3-no-invariants-only",
+        "gfdl-1.3-no-invariants-or-later",
+        "gfdl-1.3-only",
+        "gfdl-1.3-or-later",
+        "giftware",
+        "gl2ps",
+        "glide",
+        "glulxe",
+        "glwtpl",
+        "gnuplot",
+        "gpl-1.0",
+        "gpl-1.0+",
+        "gpl-1.0-only",
+        "gpl-1.0-or-later",
+        "gpl-2.0",
+        "gpl-2.0+",
+        "gpl-2.0-only",
+        "gpl-2.0-or-later",
+        "gpl-3.0",
+        "gpl-3.0+",
+        "gpl-3.0-only",
+        "gpl-3.0-or-later",
+        "gsoap-1.3b",
+        "haskellreport",
+        "hesa-withrights",
+        "hippocratic-2.1",
+        "hpnd",
+        "hpnd-sell-variant",
+        "htmltidy",
+        "ibm-pibs",
+        "ibmpl",
+        "icu",
+        "ijg",
+        "imagemagick",
+        "imatix",
+        "imlib2",
+        "info-zip",
+        "intel",
+        "intel-acpi",
+        "intel-osl",
+        "interbase-1.0",
+        "ipa",
+        "ipafont",
+        "ipl-1.0",
+        "isc",
+        "isc-license",
+        "jabber-osl",
+        "jasper-2.0",
+        "jpnic",
+        "json",
+        "lal-1.2",
+        "lal-1.3",
+        "latex2e",
+        "leptonica",
+        "lgpl-2.0",
+        "lgpl-2.0+",
+        "lgpl-2.0-only",
+        "lgpl-2.0-or-later",
+        "lgpl-2.1",
+        "lgpl-2.1+",
+        "lgpl-2.1-only",
+        "lgpl-2.1-or-later",
+        "lgpl-3.0",
+        "lgpl-3.0+",
+        "lgpl-3.0-only",
+        "lgpl-3.0-or-later",
+        "lgpllr",
+        "libpng",
+        "libpng-2.0",
+        "libselinux-1.0",
+        "libtiff",
+        "liliq-p-1.1",
+        "liliq-r-1.1",
+        "liliq-rplus-1.1",
+        "linux-openib",
+        "localauth-withrights",
+        "lpl-1.0",
+        "lpl-1.02",
+        "lppl-1.0",
+        "lppl-1.1",
+        "lppl-1.2",
+        "lppl-1.3a",
+        "lppl-1.3c",
+        "lucent-plan9",
+        "lucent1.02",
+        "makeindex",
+        "met-office-cp",
+        "miros",
+        "mit",
+        "mit-0",
+        "mit-advertising",
+        "mit-cmu",
+        "mit-enna",
+        "mit-feh",
+        "mit-license",
+        "mit-open-group",
+        "mitnfa",
+        "mitre",
+        "motosoto",
+        "mozilla",
+        "mozilla1.1",
+        "mpich2",
+        "mpl-1.0",
+        "mpl-1.1",
+        "mpl-2.0",
+        "mpl-2.0-no-copyleft-exception",
+        "ms-pl",
+        "ms-rl",
+        "mtll",
+        "mulanpsl-1.0",
+        "mulanpsl-2.0",
+        "multics",
+        "mup",
+        "nasa-1.3",
+        "nasa1.3",
+        "naumen",
+        "nbpl-1.0",
+        "ncgl-uk-2.0",
+        "ncsa",
+        "net-snmp",
+        "netcdf",
+        "nethack",
+        "newsletr",
+        "ngpl",
+        "nist-pd",
+        "nist-pd-fallback",
+        "nlod-1.0",
+        "nlpl",
+        "nokia",
+        "nosl",
+        "nosl3.0",
+        "notspecified",
+        "noweb",
+        "npl-1.0",
+        "npl-1.1",
+        "nposl-3.0",
+        "nrl",
+        "ntp",
+        "ntp-0",
+        "ntp-license",
+        "o-uda-1.0",
+        "occt-pl",
+        "oclc-2.0",
+        "oclc2",
+        "odbl-1.0",
+        "odc-by",
+        "odc-by-1.0",
+        "odc-odbl",
+        "odc-pddl",
+        "odc-pddl-1.0",
+        "ofl-1.0",
+        "ofl-1.0-no-rfn",
+        "ofl-1.0-rfn",
+        "ofl-1.1",
+        "ofl-1.1-no-rfn",
+        "ofl-1.1-rfn",
+        "ogc-1.0",
+        "ogl-canada-2.0",
+        "ogl-uk-1.0",
+        "ogl-uk-2.0",
+        "ogl-uk-3.0",
+        "ogtsl",
+        "oldap-1.1",
+        "oldap-1.2",
+        "oldap-1.3",
+        "oldap-1.4",
+        "oldap-2.0",
+        "oldap-2.0.1",
+        "oldap-2.1",
+        "oldap-2.2",
+        "oldap-2.2.1",
+        "oldap-2.2.2",
+        "oldap-2.3",
+        "oldap-2.4",
+        "oldap-2.5",
+        "oldap-2.6",
+        "oldap-2.7",
+        "oldap-2.8",
+        "oml",
+        "openfont",
+        "opengroup",
+        "openssl",
+        "opl-1.0",
+        "oset-pl-2.1",
+        "osl-1.0",
+        "osl-1.1",
+        "osl-2.0",
+        "osl-2.1",
+        "osl-3.0",
+        "other-at",
+        "other-closed",
+        "other-nc",
+        "other-open",
+        "other-pd",
+        "parity-6.0.0",
+        "parity-7.0.0",
+        "pddl-1.0",
+        "php",
+        "php-3.0",
+        "php-3.01",
+        "plexus",
+        "polyform-noncommercial-1.0.0",
+        "polyform-small-business-1.0.0",
+        "postgresql",
+        "psf-2.0",
+        "psfrag",
+        "psutils",
+        "python-2.0",
+        "pythonpl",
+        "pythonsoftfoundation",
+        "qhull",
+        "qpl-1.0",
+        "qtpl",
+        "rdisc",
+        "real",
+        "rhecos-1.1",
+        "ricohpl",
+        "rpl-1.1",
+        "rpl-1.5",
+        "rpl1.5",
+        "rpsl-1.0",
+        "rsa-md",
+        "rscpl",
+        "ruby",
+        "sax-pd",
+        "saxpath",
+        "scea",
+        "sendmail",
+        "sendmail-8.23",
+        "sgi-b-1.0",
+        "sgi-b-1.1",
+        "sgi-b-2.0",
+        "shl-0.5",
+        "shl-0.51",
+        "simpl-2.0",
+        "sissl",
+        "sissl-1.2",
+        "sleepycat",
+        "smlnj",
+        "smppl",
+        "snia",
+        "spencer-86",
+        "spencer-94",
+        "spencer-99",
+        "spl-1.0",
+        "ssh-openssh",
+        "ssh-short",
+        "sspl-1.0",
+        "standardml-nj",
+        "sugarcrm-1.1.3",
+        "sun-issl",
+        "sunpublic",
+        "swl",
+        "sybase",
+        "tapr-ohl-1.0",
+        "tcl",
+        "tcp-wrappers",
+        "tmate",
+        "torque-1.1",
+        "tosl",
+        "tu-berlin-1.0",
+        "tu-berlin-2.0",
+        "ucl-1.0",
+        "uk-ogl",
+        "ukclickusepsi",
+        "ukcrown",
+        "ukcrown-withrights",
+        "ukpsi",
+        "unicode-dfs-2015",
+        "unicode-dfs-2016",
+        "unicode-tou",
+        "unlicense",
+        "uoi-ncsa",
+        "upl-1.0",
+        "user-jsim",
+        "ver2_eiffel",
+        "vim",
+        "vostrom",
+        "vovidapl",
+        "vsl-1.0",
+        "w3c",
+        "w3c-19980720",
+        "w3c-20150513",
+        "watcom-1.0",
+        "wsuipa",
+        "wtfpl",
+        "wxwindows",
+        "x11",
+        "xerox",
+        "xfree86-1.1",
+        "xinetd",
+        "xnet",
+        "xpp",
+        "xskat",
+        "ypl-1.0",
+        "ypl-1.1",
+        "zed",
+        "zend-2.0",
+        "zenodo-freetoread-1.0",
+        "zimbra-1.3",
+        "zimbra-1.4",
+        "zlib",
+        "zlib-acknowledgement",
+        "zlib-license",
+        "zpl",
+        "zpl-1.1",
+        "zpl-2.0",
+        "zpl-2.1"
+      ]
+    },
+    "license": {
+      "description": "License identifier, in the lower case form the deposit will carry. Zenodo lower cases and strips the value before it maps the license to an InvenioRDM identifier, so it also accepts other capitalisations of these identifiers. A license that exists only in the legacy vocabulary, such as `gfdl`, is looked up without that normalisation, so there Zenodo requires the lower case form as well.",
+      "if": {
+        "type": "object"
+      },
+      "then": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/license_id"
+          }
+        }
+      },
+      "else": {
+        "$ref": "#/definitions/license_id"
+      }
+    }
+  }
+}

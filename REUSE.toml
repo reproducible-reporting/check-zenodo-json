@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# SPDX-License-Identifier: Apache-2.0
+version = 1
+
+[[annotations]]
+path = [
+    "check_zenodo_json/zenodo-derived-legacy-deposit.schema.json",
+]
+SPDX-FileCopyrightText = "2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [
+    ".claude/skills/zenodo-deployed-versions/SKILL.md",
+    ".zenodo.json",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "README.md",
+]
+SPDX-FileCopyrightText = "2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>"
+SPDX-License-Identifier = "Apache-2.0"

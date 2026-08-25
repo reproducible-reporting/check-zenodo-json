@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# SPDX-License-Identifier: Apache-2.0
+name: pytest
+on:
+  push:
+    branches:
+      # Run tests for change on the main branch ...
+      - main
+    paths:
+      # ... but only if relevant files have changed.
+      - check_zenodo_json/**
+      - tests/**
+      - .zenodo.json
+      - pyproject.toml
+      - .github/workflows/pytest.yaml
+  pull_request:
+    # Run tests on pull requests ...
+    paths:
+      # ... but only if relevant files have changed.
+      - check_zenodo_json/**
+      - tests/**
+      - .zenodo.json
+      - pyproject.toml
+      - .github/workflows/pytest.yaml
+
+jobs:
+  tests:
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.10'
+            ubuntu-version: '24.04'
+          - python-version: '3.14'
+            ubuntu-version: '26.04'
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+      - name: Install latest commit version with all development dependencies
+        run: uv pip install --system -e .[dev]
+      - name: Run unit tests
+        run: pytest -vv

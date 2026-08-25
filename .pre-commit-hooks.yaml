@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# SPDX-License-Identifier: Apache-2.0
+- id: check-zenodo-json
+  name: check .zenodo.json
+  description: Validate .zenodo.json against an unofficial JSON Schema for Zenodo metadata.
+  entry: check-zenodo-json
+  language: python
+  files: (^|/)\.zenodo\.json$

@@ -1,0 +1,37 @@
+{
+  "upload_type": "software",
+  "title": "Pre-commit Hook for Validation of .zenodo.json Files",
+  "description": "This repository contains a pre-commit hook that validates `.zenodo.json` files against an unofficial Zenodo JSON Schema, derived from the InvenioRDM and Zenodo code bases using Claude Opus 5. It ensures that the metadata provided in `.zenodo.json` files is correct and adheres to the expected structure, helping maintain consistency and accuracy in software metadata submissions to Zenodo.",
+  "notes": "The schema file check_zenodo_json/zenodo-derived-legacy-deposit.schema.json is licensed under CC0-1.0. The rest of the repository, and therefore this deposit as a whole, is licensed under Apache-2.0.",
+  "creators": [
+    {
+      "name": "Verstraelen, Toon",
+      "orcid": "0000-0001-9288-5608",
+      "affiliation": "Center for Molecular Modeling (CMM), Ghent University"
+    }
+  ],
+  "license": "apache-2.0",
+  "access_right": "open",
+  "communities": [
+    {
+      "identifier": "ugent"
+    }
+  ],
+  "language": "eng",
+  "keywords": [
+    "zenodo",
+    "json",
+    "schema",
+    "jsonschema",
+    "pre-commit",
+    "validation",
+    "metadata",
+    "invenio",
+    "inveniordm",
+    "research software metadata"
+  ],
+  "references": [
+    "Zenodo legacy deserializer: https://github.com/zenodo/zenodo-rdm",
+    "InvenioRDM vocabularies: https://github.com/inveniosoftware/invenio-rdm-records"
+  ]
+}

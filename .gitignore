@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# SPDX-License-Identifier: Apache-2.0
+
+# Environment
+.envrc
+.pytest_cache/
+.ruff_cache/
+.venv/
+uv.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info
+dist/
+
+# Tokens
+*token*
