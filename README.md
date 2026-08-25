@@ -32,7 +32,7 @@ Add the following to `.pre-commit-config.yaml`:
 ```yaml
 repos:
 - repo: https://github.com/reproducible-reporting/check-zenodo-json
-  rev: v1.0.0
+  rev: v1.1.0
   hooks:
   - id: check-zenodo-json
 ```
