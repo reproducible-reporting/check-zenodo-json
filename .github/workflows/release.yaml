@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# SPDX-License-Identifier: Apache-2.0
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    # GitHub attaches the source archives to the release by itself,
+    # so nothing has to be built or uploaded here.
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Extract the release notes from the changelog
+        run: >-
+          .github/scripts/extract-notes.sh
+          '${{ github.repository }}'
+          '${{ github.ref_name }}'
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create '${{ github.ref_name }}'
+          --repo '${{ github.repository }}'
+          --title 'check-zenodo-json ${{ github.ref_name }}'
+          --notes-file notes.md
