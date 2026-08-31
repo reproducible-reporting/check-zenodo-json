@@ -27,7 +27,7 @@ repos:
   hooks:
   - id: remove-crlf
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.3
+  rev: v0.16.5
   hooks:
   - id: ruff-format
   - id: ruff-check
@@ -45,6 +45,6 @@ repos:
     files: (^|/)\.zenodo\.json$
     args: ["--schemafile", "check_zenodo_json/zenodo-derived-legacy-deposit.schema.json"]
 - repo: https://github.com/jackdewinter/pymarkdown
-  rev: v0.9.18
+  rev: v0.9.39
   hooks:
   - id: pymarkdown
